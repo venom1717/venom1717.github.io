@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rick Chatbot</title>
+    <style>
+        #rick-img {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-container">
+        <img id="rick-img" src="images/Rick and Morty Poker.PNG" alt="Rick" />
+        <div id="chat-messages"></div>
+        <input type="text" id="user-input" placeholder="Type your message..." />
+        <button id="send-button">Send</button>
+    </div>
+
+    <script>
+        const imagesDirectory = "images/Rick/"; // Directory path for Rick's images
+        const images = [
+            "Rick Speak 1.PNG",
+            "Rick Speak 2.PNG",
+            "Rick Speak 3.PNG",
+            "Rick Speak 4.PNG",
+            "Rick Speak 5.PNG",
+            "Rick Speak 6.PNG",
+            "Rick Speak 7.PNG",
+            "Rick Speak 8.PNG",
+            "Rick Speak 9.PNG",
+            "Rick Speak 10.PNG",
+            "Rick Speak 11.PNG",
+            "Rick Speak 12.PNG",
+            "Rick Speak 13.PNG",
+            // Add all your image file names here
+        ];
+
+        let currentImageIndex = 0;
+
+        function changeRickImageRandomly() {
+            const rickImg = document.getElementById("rick-img");
+            const randomIndex = Math.floor(Math.random() * images.length);
+            rickImg.src = imagesDirectory + images[randomIndex];
+        }
+
+        function changeRickImage() {
+            const rickImg = document.getElementById("rick-img");
+            rickImg.src = "images/Rick and Morty Poker.PNG";
+        }
+
+        async function addMessageToChat(message, isUser) {
+            const chatMessages = document.getElementById("chat-messages");
+            const messageDiv = document.createElement("div");
+            messageDiv.className = isUser ? "user-message" : "rick-message";
+            messageDiv.textContent = message;
+            chatMessages.appendChild(messageDiv);
+
+            if (!isUser) {
+                const synth = window.speechSynthesis;
+                const utterance = new SpeechSynthesisUtterance(message);
+
+                // Split the response into words
+                const words = message.split(' ');
+
+                // Change the image for each word in the response
+                let currentIndex = 0;
+
+                utterance.addEventListener('start', () => {
+                    const intervalId = setInterval(() => {
+                        if (currentIndex < words.length+10) {
+                            changeRickImageRandomly(); // Change image randomly
+                            currentIndex++;
+                        }else{
+                            console.log("in here")
+                            changeRickImage();
+                        } 
+
+                    }, 200); // Change image every 1 second
+                });
+
+                // Read Rick's response aloud
+                synth.speak(utterance);
+
+            }
+        }
+
+        document.getElementById("send-button").addEventListener("click", () => {
+            const userInput = document.getElementById("user-input");
+            const userMessage = userInput.value;
+
+            // Add user message to the chat
+            addMessageToChat(userMessage, true);
+
+            // Make an API call to GPT-3 to get a response
+            // You'll need to implement this part using the GPT-3 API
+
+            // For simplicity, we'll add a dummy response
+            const dummyResponse = "I'm not sure, Morty. But let me tell you...";
+
+            // Add the response to the chat
+            addMessageToChat(dummyResponse, false);
+
+            // Clear the user input
+            userInput.value = "";
+        });
+    </script>
+</body>
+</html>
