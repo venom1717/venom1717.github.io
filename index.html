@@ -3,7 +3,19 @@
 <head>
     <title>Rick Chatbot</title>
     <style>
+        #chat-container {
+            position: relative;
+        }
+
         #rick-img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .rick-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
             max-width: 100%;
             height: auto;
         }
@@ -13,40 +25,48 @@
     <div id="chat-container">
         <img id="rick-img" src="images/Rick and Morty Poker.PNG" alt="Rick" />
         <div id="chat-messages"></div>
-        <input type="text" id="user-input" placeholder="Type your message..." />
-        <button id="send-button">Send</button>
     </div>
 
+    <iframe width="350px" height="500px" src="https://www.youtube.com/live_chat?v=7UCOwu5wwKQ&amp;embed_domain=stephensimon.xyz" ></iframe>
+
     <script>
-        const imagesDirectory = "images/Rick/"; // Directory path for Rick's images
+        const imagesDirectory = "images/Rick - Edited/"; // Directory path for Rick's images
+
         const images = [
-            "Rick Speak 1.PNG",
-            "Rick Speak 2.PNG",
-            "Rick Speak 3.PNG",
-            "Rick Speak 4.PNG",
-            "Rick Speak 5.PNG",
-            "Rick Speak 6.PNG",
-            "Rick Speak 7.PNG",
-            "Rick Speak 8.PNG",
-            "Rick Speak 9.PNG",
-            "Rick Speak 10.PNG",
-            "Rick Speak 11.PNG",
-            "Rick Speak 12.PNG",
-            "Rick Speak 13.PNG",
+            "Rick Talks 1.PNG",
+            "Rick Talks 2.PNG",
+            "Rick Talks 3.PNG",
+            "Rick Talks 4.PNG",
+            "Rick Talks 5.PNG",
+            "Rick Talks 6.PNG",
+            "Rick Talks 7.PNG",
+            "Rick Talks 8.PNG",
+            "Rick Talks 9.PNG",
+            "Rick Talks 10.PNG",
+            "Rick Talks 11.PNG",
+            "Rick Talks 12.PNG",
+            "Rick Talks 13.PNG",
             // Add all your image file names here
         ];
 
         let currentImageIndex = 0;
+        let lastMessage = "";
 
         function changeRickImageRandomly() {
-            const rickImg = document.getElementById("rick-img");
+            const rickContainer = document.getElementById("chat-container");
             const randomIndex = Math.floor(Math.random() * images.length);
-            rickImg.src = imagesDirectory + images[randomIndex];
+            const rickOverlay = document.createElement("img");
+            rickOverlay.src = imagesDirectory + images[randomIndex];
+            rickOverlay.classList.add("rick-overlay");
+            rickContainer.appendChild(rickOverlay);
         }
 
         function changeRickImage() {
-            const rickImg = document.getElementById("rick-img");
-            rickImg.src = "images/Rick and Morty Poker.PNG";
+            const rickContainer = document.getElementById("chat-container");
+            const rickOverlay = document.querySelector(".rick-overlay");
+            if (rickOverlay) {
+                rickContainer.removeChild(rickOverlay);
+            }
         }
 
         async function addMessageToChat(message, isUser) {
@@ -71,39 +91,89 @@
                         if (currentIndex < words.length+10) {
                             changeRickImageRandomly(); // Change image randomly
                             currentIndex++;
-                        }else{
+                        } else {
                             console.log("in here")
                             changeRickImage();
                         } 
-
-                    }, 200); // Change image every 1 second
+                    }, 200); // Change image every 200 milliseconds
                 });
 
                 // Read Rick's response aloud
                 synth.speak(utterance);
-
             }
         }
 
-        document.getElementById("send-button").addEventListener("click", () => {
-            const userInput = document.getElementById("user-input");
-            const userMessage = userInput.value;
+        async function sendChatToGPT(message) {
+            const API_KEY = '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'; // Replace with your OpenAI API key
 
-            // Add user message to the chat
-            addMessageToChat(userMessage, true);
+            try {
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_KEY}`,
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4',
+                        messages: [{ role: 'user', content: message }],
+                        temperature: 1.0,
+                        top_p: 0.7,
+                        n: 1,
+                        stream: false,
+                        presence_penalty: 0,
+                        frequency_penalty: 0,
+                    }),
+                });
 
-            // Make an API call to GPT-3 to get a response
-            // You'll need to implement this part using the GPT-3 API
+                if (response.ok) {
+                    const data = await response.json();
+                    const apiResponse = data.choices[0].message.content;
 
-            // For simplicity, we'll add a dummy response
-            const dummyResponse = "I'm not sure, Morty. But let me tell you...";
+                    // Add the API response to the chat
+                    addMessageToChat(apiResponse, false);
+                } else {
+                    console.error('Error:', response);
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
 
-            // Add the response to the chat
-            addMessageToChat(dummyResponse, false);
+        function fetchAndDisplayLastChat() {
+            const apiKey = 'AIzaSyBSMJpSgGpbbuthhoRm1oX9b6TRHkD4IcY'; // Replace with your YouTube Data API key
+            const liveChatId = 'Cg0KC1BwNVVhZGZ0Q1NrKicKGFVDY1VrZnk2d0djU21KVGs1MW42TVBQdxILUHA1VWFkZnRDU2s'; // Replace with the actual live chat ID
 
-            // Clear the user input
-            userInput.value = "";
-        });
+            const url = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${liveChatId}&part=snippet,authorDetails&maxResults=2000&key=${apiKey}`;
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const chatMessages = data.items;
+                    if (chatMessages.length > 0) {
+                        // Sort messages by publishedAt in descending order
+                        chatMessages.sort((a, b) => new Date(b.snippet.publishedAt) - new Date(a.snippet.publishedAt));
+                        
+                        const currentMessage = chatMessages[0].snippet.textMessageDetails.messageText;
+                        if (currentMessage !== lastMessage) {
+                            lastMessage = currentMessage;
+                            // Add user message to the chat
+                            addMessageToChat(currentMessage, true);
+
+                            // Send user message to GPT and get response
+                            sendChatToGPT(currentMessage);
+                        }
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // Fetch and display last chat every 5 seconds
+        setInterval(fetchAndDisplayLastChat, 5000);
     </script>
 </body>
 </html>
